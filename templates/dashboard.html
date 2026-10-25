@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Request · ProcuraFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Purchase Request</h1>
+  <span class="pill">{{ user.role }}</span>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Kode</th><th>Judul</th><th>Pemohon</th><th>Status</th><th class="num">Estimasi</th></tr>
+      </thead>
+      <tbody>
+      {% for r in requests %}
+        <tr>
+          <td><a href="/requests/{{ r.id }}" style="font-weight:600">{{ r.code }}</a></td>
+          <td>{{ r.title }}</td>
+          <td>{{ r.requester_name }}</td>
+          <td><span class="s s-{{ r.status }}">{{ STATUS_LABEL[r.status] }}</span></td>
+          <td class="num" style="font-weight:600">Rp {{ "{:,.0f}".format(r.total or 0).replace(",", ".") }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted" style="text-align:center;padding:2rem">Belum ada request pengadaan.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if user.role in ('requester', 'admin') %}
+<section class="card">
+  <h2>Ajukan request baru</h2>
+  <form method="post" action="/requests" class="grid">
+    <label class="span2">Judul <input name="title" required maxlength="200" placeholder="Pengadaan 5 laptop untuk tim QA"></label>
+    <label>Departemen <input name="department" maxlength="80" placeholder="{{ user.department or 'IT' }}"></label>
+    <label>Dibutuhkan tanggal <input name="needed_date" type="date"></label>
+    <label class="span2">Justifikasi <textarea name="justification" rows="2" maxlength="1000" placeholder="Alasan kebutuhan"></textarea></label>
+    <label class="span2">
+      Item — satu per baris: <code>nama | qty | satuan | harga satuan</code>
+      <textarea name="items" rows="4" required placeholder="Laptop ThinkPad E14 | 5 | unit | 14500000"></textarea>
+    </label>
+    <div class="span2 row">
+      <button type="submit">Simpan sebagai draft</button>
+      <small class="muted">Draft bisa disubmit dari halaman detail.</small>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Isi form otomatis dari dokumen</h2>
+  <p class="muted">
+    Unggah foto/scan quotation, PO, atau nota → AI membaca item dan mengisi form.
+    Punya API key sendiri? Atur di <a href="/settings">Pengaturan AI</a>.
+    Tanpa key, tempel teks dengan format <code>nama | qty | satuan | harga</code>.
+  </p>
+  <form id="extract-form" class="grid">
+    <label class="span2">Foto / scan dokumen (opsional)
+      <input id="extract-image" type="file" accept="image/*" capture="environment">
+    </label>
+    <label class="span2">Atau tempel teks dokumen
+      <textarea id="extract-text" rows="3" placeholder="Kertas A4 70gsm | 20 | rim | 55000&#10;Tinta printer HP 680 | 4 | pcs | 120000"></textarea>
+    </label>
+    <div class="span2 row">
+      <button type="submit">Ekstrak jadi item</button>
+      <small id="extract-msg" class="muted" role="status" aria-live="polite"></small>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/extract.js" defer></script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan AI · ProcuraFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>AI / Computer Vision</h1>
+    <p class="muted">Bawa API key sendiri (BYOK). Provider apa pun yang kompatibel OpenAI <code>/chat/completions</code>.</p>
+  </div>
+  {% if cfg %}<span class="pill ok">aktif · {{ cfg.model }}</span>{% else %}<span class="pill">belum diatur</span>{% endif %}
+</div>
+
+{% if saved %}<p class="ok">Konfigurasi tersimpan.</p>{% endif %}
+
+<div class="cols">
+  <section class="card">
+    <h2>Konfigurasi</h2>
+    <form method="post" action="/settings" class="grid">
+      <label class="span2">Base URL
+        <input name="base_url" required type="url" placeholder="https://api.openai.com/v1"
+               value="{{ cfg.base_url if cfg else '' }}">
+        <small class="muted">Tanpa <code>/chat/completions</code>. Contoh: <code>https://openrouter.ai/api/v1</code>, <code>https://api.groq.com/openai/v1</code>, <code>http://localhost:11434/v1</code></small>
+      </label>
+      <label class="span2">Model
+        <input name="model" required placeholder="gpt-4o-mini" value="{{ cfg.model if cfg else '' }}">
+        <small class="muted">Harus model vision kalau mau baca gambar/scan.</small>
+      </label>
+      <label class="span2">API key
+        <input name="api_key" type="password" autocomplete="off"
+               placeholder="{{ ('tersimpan ' ~ masked ~ ' — kosongkan untuk mempertahankan') if cfg else 'sk-...' }}">
+      </label>
+      <div class="span2 row">
+        <button type="submit">Simpan</button>
+        <button type="button" id="test-btn" class="ghost">Tes koneksi</button>
+        <small id="test-msg" class="muted" role="status" aria-live="polite"></small>
+      </div>
+    </form>
+    {% if cfg %}
+    <form method="post" action="/settings/delete" class="row" style="margin-top:.75rem">
+      <button type="submit" class="danger">Hapus konfigurasi</button>
+    </form>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Catatan</h2>
+    <ul class="notes">
+      <li>Key disimpan per user di database lokal; tidak pernah dikirim ke mana pun selain provider yang kamu isi.</li>
+      <li>Key hanya dipakai saat kamu menekan <em>Ekstrak</em> — tidak ada panggilan otomatis.</li>
+      <li>Tanpa key, form tetap bisa diisi dengan format <code>nama | qty | satuan | harga</code> (parser lokal, gratis).</li>
+      <li>Endpoint harus mengikuti format OpenAI. Untuk provider lain, biasanya base URL-nya sudah menyediakan jalur kompatibel.</li>
+      <li>Di repo ini key tersimpan plaintext di SQLite — cukup untuk demo, bukan untuk produksi.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/settings.js" defer></script>{% endblock %}

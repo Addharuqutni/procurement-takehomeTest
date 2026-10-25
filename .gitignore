@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+
+# local database (SQLite default + PostgreSQL artifacts)
+procurement.db
+procurement.db-wal
+procurement.db-shm
+*.sql
+
+# tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# secrets (never commit a real key)
+.env
+.env.*
+!.env.example
+
+# dokumen tugas / berkas pemberi tugas (bukan bagian dari aplikasi)
+Programming Test*.pdf
+*_test_soal.pdf

@@ -1,0 +1,18 @@
+[project]
+name = "procuraflow"
+version = "1.0.0"
+description = "Procurement web app: request, approval, quotation, PO, goods receipt"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "UP", "B", "SIM", "ARG", "RET", "C4"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's own idiom: Depends() in the signature is how DI is declared.
+"app.py" = ["B008"]
+# Tests intentionally stub signatures they don't fully use.
+"test_app.py" = ["ARG"]

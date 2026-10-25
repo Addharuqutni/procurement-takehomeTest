@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="ProcuraFlow">
+  <rect width="192" height="192" rx="42" fill="#111827"/>
+  <path d="M46 64h60a30 30 0 0 1 0 60h-24v20H46V64zm36 20v20h24a10 10 0 0 0 0-20H82z" fill="#7aa2ff"/>
+  <circle cx="132" cy="132" r="14" fill="#34d399"/>
+</svg>

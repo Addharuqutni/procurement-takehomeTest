@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ req.code }} · ProcuraFlow{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a href="/" class="muted">&larr; Semua request</a>
+    <h1>{{ req.title }}</h1>
+    <p class="muted">{{ req.code }} · {{ req.department }} · pemohon {{ req.requester_name }}</p>
+  </div>
+  <span class="s s-{{ req.status }}">{{ STATUS_LABEL[req.status] }}</span>
+</div>
+
+<div class="cols">
+  <section class="card">
+    <h2>Item</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nama</th><th class="num">Qty</th><th>Satuan</th><th class="num">Harga</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+        {% for i in items %}
+          <tr>
+            <td style="font-weight:500">{{ i.name }}</td>
+            <td class="num">{{ i.qty | round(2) }}</td>
+            <td>{{ i.unit }}</td>
+            <td class="num">Rp {{ "{:,.0f}".format(i.est_price).replace(",", ".") }}</td>
+            <td class="num" style="font-weight:600">Rp {{ "{:,.0f}".format(i.qty * i.est_price).replace(",", ".") }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><th colspan="4">Total estimasi</th>
+          <th class="num" style="font-size:1.05rem;font-weight:700;color:var(--ink)">Rp {{ "{:,.0f}".format(total_est).replace(",", ".") }}</th></tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if req.justification %}<p style="margin-top:1rem;color:var(--ink-secondary)"><strong>Justifikasi:</strong> {{ req.justification }}</p>{% endif %}
+    {% if req.needed_date %}<p style="color:var(--ink-secondary)"><strong>Dibutuhkan:</strong> {{ req.needed_date }}</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Riwayat</h2>
+    <ol class="timeline">
+    {% for h in history %}
+      <li>
+        <span class="s s-{{ h.to_status }}">{{ STATUS_LABEL.get(h.to_status, h.to_status) }}</span>
+        <small>{{ h.created_at.replace('T', ' ')[:16] }} · {{ h.actor_name or 'sistem' }} · {{ h.action }}</small>
+        {% if h.note %}<p>{{ h.note }}</p>{% endif %}
+      </li>
+    {% endfor %}
+    </ol>
+  </section>
+</div>
+
+{% if is_owner and req.status == 'draft' %}
+<section class="card">
+  <h2>Ubah draft</h2>
+  <form method="post" action="/requests/{{ req.id }}/edit" class="grid">
+    <label class="span2">Judul <input name="title" required maxlength="200" value="{{ req.title }}"></label>
+    <label>Departemen <input name="department" maxlength="80" value="{{ req.department }}"></label>
+    <label>Dibutuhkan tanggal <input name="needed_date" type="date" value="{{ req.needed_date or '' }}"></label>
+    <label class="span2">Justifikasi <textarea name="justification" rows="2" maxlength="1000">{{ req.justification or '' }}</textarea></label>
+    <label class="span2">Item — <code>nama | qty | satuan | harga</code>
+      <textarea name="items" rows="4" required>{% for i in items %}{{ i.name }} | {{ i.qty | round(2) }} | {{ i.unit }} | {{ i.est_price | round(0) | int }}
+{% endfor %}</textarea>
+    </label>
+    <div class="span2 row"><button type="submit">Simpan perubahan</button></div>
+  </form>
+</section>
+{% endif %}
+
+{% if actions %}
+<section class="card">
+  <h2>Aksi tersedia</h2>
+  <form method="post" action="/requests/{{ req.id }}/action" class="row wrap">
+    <label>Catatan <input name="note" maxlength="500" placeholder="opsional"></label>
+    <div class="row wrap">
+      {% for a in actions %}
+      <button type="submit" name="action" value="{{ a }}" class="{{ 'danger' if a in ('reject', 'cancel') else '' }}">{{ a.replace('_', ' ') }}</button>
+      {% endfor %}
+    </div>
+  </form>
+</section>
+{% endif %}
+
+{% if can_quote %}
+<section class="card">
+  <h2>Tambah quotation vendor</h2>
+  <form method="post" action="/requests/{{ req.id }}/quotations" class="row wrap">
+    <label>Vendor
+      <select name="vendor_id" required>
+        {% for v in vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Total (Rp) <input name="total" type="number" min="0" step="1000" required></label>
+    <label>Lead time (hari) <input name="lead_time_days" type="number" min="0" value="7"></label>
+    <label>Catatan <input name="note" maxlength="300"></label>
+    <button type="submit" class="self-end">Simpan quotation</button>
+  </form>
+</section>
+{% endif %}
+
+{% if quotations %}
+<section class="card">
+  <h2>Perbandingan quotation</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Vendor</th><th class="num">Total</th><th class="num">Lead time</th><th>Catatan</th><th></th></tr></thead>
+      <tbody>
+      {% for q in quotations %}
+        <tr>
+          <td style="font-weight:600">{{ q.vendor_name }}</td>
+          <td class="num" style="font-weight:600">Rp {{ "{:,.0f}".format(q.total).replace(",", ".") }}</td>
+          <td class="num">{{ q.lead_time_days }} hari</td>
+          <td class="muted">{{ q.note or '-' }}</td>
+          <td style="text-align:right">
+            {% if req.status == 'sourcing' %}
+            <form method="post" action="/requests/{{ req.id }}/po">
+              <input type="hidden" name="quotation_id" value="{{ q.id }}">
+              <button type="submit">Terbitkan PO</button>
+            </form>
+            {% elif q.selected %}<span class="pill ok">Dipilih</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if po %}
+<section class="card">
+  <h2>{{ po.code }}</h2>
+  <p>Vendor: <strong>{{ po.vendor_name }}</strong> · Nilai: <strong>Rp {{ "{:,.0f}".format(po.total).replace(",", ".") }}</strong></p>
+  {% if grn %}
+  <p class="ok">Barang diterima {{ grn.received_at.replace('T', ' ')[:16] }}{% if grn.note %} — {{ grn.note }}{% endif %}</p>
+  {% elif req.status == 'po_issued' and user.role in ('procurement', 'admin') %}
+  <form method="post" action="/requests/{{ req.id }}/receive" class="row wrap">
+    <label>Catatan penerimaan <input name="note" maxlength="300" placeholder="kondisi barang, jumlah diterima"></label>
+    <button type="submit" class="self-end">Konfirmasi barang diterima</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
